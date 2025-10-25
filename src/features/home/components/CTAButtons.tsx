@@ -2,38 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
+import { ArrowRight } from 'lucide-react';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { CTA_CONTENT } from '@/features/home/constants/content';
 
 export function CTAButtons() {
-  const { isAuthenticated, isLoading } = useCurrentUser();
-  const { signOut } = useAuth();
+  const { isAuthenticated } = useCurrentUser();
   const [mounted, setMounted] = useState(false);
 
-  // 클라이언트에서만 렌더링 (hydration 오류 방지)
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
-    signOut();
-  };
-
-  // 서버 렌더링 및 초기 클라이언트 렌더링 시 게스트 UI 표시 (일관성 유지)
-  if (!mounted || isLoading) {
+  if (!mounted) {
     return (
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
         <Link
           href="/signup"
-          className="rounded-lg bg-indigo-600 px-8 py-3 text-center text-base font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+          className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-indigo-600 shadow-xl transition-all hover:shadow-2xl hover:scale-105"
         >
           {CTA_CONTENT.guest.signup}
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Link>
         <Link
           href="/login"
-          className="rounded-lg border-2 border-white bg-white/10 px-8 py-3 text-center text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20"
         >
           {CTA_CONTENT.guest.login}
         </Link>
@@ -46,28 +39,11 @@ export function CTAButtons() {
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
         <Link
           href="/new-analysis"
-          className="rounded-lg bg-indigo-600 px-8 py-3 text-center text-base font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+          className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-indigo-600 shadow-xl transition-all hover:shadow-2xl hover:scale-105"
         >
           {CTA_CONTENT.authenticated.newAnalysis}
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Link>
-        <Link
-          href="/dashboard"
-          className="rounded-lg border-2 border-white bg-white/10 px-8 py-3 text-center text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
-        >
-          {CTA_CONTENT.authenticated.dashboard}
-        </Link>
-        <Link
-          href="/subscription"
-          className="rounded-lg border-2 border-white bg-white/10 px-8 py-3 text-center text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
-        >
-          {CTA_CONTENT.authenticated.subscription}
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="rounded-lg border-2 border-red-500 bg-red-500/10 px-8 py-3 text-center text-base font-semibold text-red-400 backdrop-blur-sm transition hover:bg-red-500/20 focus:outline-none focus:ring-4 focus:ring-red-500/50"
-        >
-          {CTA_CONTENT.authenticated.logout}
-        </button>
       </div>
     );
   }
@@ -76,13 +52,14 @@ export function CTAButtons() {
     <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
       <Link
         href="/signup"
-        className="rounded-lg bg-indigo-600 px-8 py-3 text-center text-base font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+        className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-indigo-600 shadow-xl transition-all hover:shadow-2xl hover:scale-105"
       >
         {CTA_CONTENT.guest.signup}
+        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
       </Link>
       <Link
         href="/login"
-        className="rounded-lg border-2 border-white bg-white/10 px-8 py-3 text-center text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
+        className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20"
       >
         {CTA_CONTENT.guest.login}
       </Link>

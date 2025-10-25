@@ -33,6 +33,7 @@ export default function NewAnalysisPage({ params }: NewAnalysisPageProps) {
     birth_date: '',
     birth_time: '',
     is_lunar: false,
+    time_unknown: false,
     model_type: 'flash' as 'flash' | 'pro',
   });
 
@@ -158,6 +159,19 @@ export default function NewAnalysisPage({ params }: NewAnalysisPageProps) {
             onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
             className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-indigo-500 focus:outline-none"
           />
+          {/* 음력 여부 - 생년월일 바로 아래로 이동 */}
+          <div className="flex items-center gap-3 mt-3">
+            <input
+              type="checkbox"
+              id="isLunar"
+              checked={formData.is_lunar}
+              onChange={(e) => setFormData({ ...formData, is_lunar: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            <label htmlFor="isLunar" className="text-sm font-medium text-slate-700">
+              음력입니다
+            </label>
+          </div>
         </div>
 
         {/* 태어난 시간 필드 */}
@@ -169,22 +183,29 @@ export default function NewAnalysisPage({ params }: NewAnalysisPageProps) {
             type="time"
             value={formData.birth_time}
             onChange={(e) => setFormData({ ...formData, birth_time: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-indigo-500 focus:outline-none"
+            disabled={formData.time_unknown}
+            className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
           />
-        </div>
-
-        {/* 음력 여부 */}
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="isLunar"
-            checked={formData.is_lunar}
-            onChange={(e) => setFormData({ ...formData, is_lunar: e.target.checked })}
-            className="h-4 w-4 rounded border-slate-300"
-          />
-          <label htmlFor="isLunar" className="text-sm font-medium text-slate-700">
-            음력입니다
-          </label>
+          {/* 시간 모름 체크박스 - 태어난 시간 바로 아래로 이동 */}
+          <div className="flex items-center gap-3 mt-3">
+            <input
+              type="checkbox"
+              id="timeUnknown"
+              checked={formData.time_unknown}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setFormData({
+                  ...formData,
+                  time_unknown: checked,
+                  birth_time: checked ? '' : formData.birth_time
+                });
+              }}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            <label htmlFor="timeUnknown" className="text-sm font-medium text-slate-700">
+              태어난 시간을 모릅니다
+            </label>
+          </div>
         </div>
 
         {/* 모델 선택 */}
