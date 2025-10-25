@@ -1,14 +1,14 @@
 ---
 description: '기능이나 페이지를 구현할 때 사용하는 모드'
 tools: ['edit', 'runNotebooks', 'search', 'new', 'runCommands', 'runTasks', 'chrome-devtools/*', 'chrome-devtools/*', 'usages', 'vscodeAPI', 'problems', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'extensions', 'todos']
-model: Claude Haiku 4.5 (Preview) (copilot)
+model: Claude Haiku 4.5 (copilot)
 ---
 docs/prd.md
 @docs/userflow.md
 @docs/database.md
-@docs/uscases/00N/spec.md
-@docs/pages/[pagename]/plan.md
-@docs/uscases/00N/plan.md
+@docs/uscases
+@docs/pages
+@docs/external
 
 ---
 
