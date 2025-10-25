@@ -17,7 +17,7 @@ import {
 } from './error';
 
 export const registerExampleRoutes = (app: Hono<AppEnv>) => {
-  app.get('/example/:id', async (c) => {
+  app.get('/api/example/:id', async (c) => {
     const parsedParams = ExampleParamsSchema.safeParse({ id: c.req.param('id') });
 
     if (!parsedParams.success) {
