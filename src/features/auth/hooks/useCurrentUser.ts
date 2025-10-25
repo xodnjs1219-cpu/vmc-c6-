@@ -27,18 +27,28 @@ export function useCurrentUser() {
     return {
       userId: user.id,
       email: user.primaryEmailAddress?.emailAddress,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.firstName ?? undefined,
+      lastName: user.lastName ?? undefined,
       imageUrl: user.imageUrl,
       subscriptionPlan,
     };
-  }, [user]);
+  }, [
+    user?.id,
+    user?.primaryEmailAddress?.emailAddress,
+    user?.firstName,
+    user?.lastName,
+    user?.imageUrl,
+    user?.publicMetadata?.subscription,
+  ]);
 
-  const isAuthenticated = isLoaded && !!user;
+  const isAuthenticated = useMemo(() => isLoaded && !!user, [isLoaded, user]);
 
-  return {
-    currentUser,
-    isAuthenticated,
-    isLoading: !isLoaded,
-  };
+  return useMemo(
+    () => ({
+      currentUser,
+      isAuthenticated,
+      isLoading: !isLoaded,
+    }),
+    [currentUser, isAuthenticated, isLoaded]
+  );
 }

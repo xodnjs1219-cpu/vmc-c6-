@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Check, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { loadTossPayments } from '@tosspayments/payment-sdk';
 import { apiClient } from '@/lib/remote/api-client';
 import {
@@ -45,19 +45,64 @@ const PLANS = [
 export default function SubscriptionPage({ params }: SubscriptionPageProps) {
   void params;
   const router = useRouter();
-  const { toast } = useToast();
   const { userId } = useAuth();
   const { currentUser } = useCurrentUser();
 
   const [isLoading, setIsLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [paymentError, setPaymentError] = useState<{ code: string; message: string } | null>(null);
 
   const [upgradeData, setUpgradeData] = useState({
-    name: currentUser?.firstName || '',
-    email: currentUser?.email || '',
+    name: '',
+    email: '',
     phone: '',
   });
+
+  // currentUser 로드 후 한 번만 upgradeData 설정
+  useEffect(() => {
+    if (currentUser?.firstName && currentUser?.email) {
+      setUpgradeData((prev) => {
+        // 이미 설정되어 있으면 업데이트하지 않음 (무한 루프 방지)
+        if (prev.name || prev.email) {
+          return prev;
+        }
+        return {
+          name: currentUser.firstName || '',
+          email: currentUser.email || '',
+          phone: '',
+        };
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.firstName, currentUser?.email]);
+
+  // URL 파라미터에서 결제 에러 확인 (마운트 시 한 번만 실행)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const code = urlParams.get('code');
+    const message = urlParams.get('message');
+
+    if (error !== 'payment_failed') {
+      return;
+    }
+
+    // 에러 메시지 구성
+    const errorMessage = message || '결제 처리 중 오류가 발생했습니다.';
+
+    // 에러 상태 설정 (Dialog 표시용)
+    setPaymentError({
+      code: code || 'UNKNOWN',
+      message: errorMessage,
+    });
+
+    // URL에서 쿼리 파라미터 제거 (깔끔한 URL 유지)
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUpgrade = async () => {
     // 사용자 정보 검증
@@ -305,6 +350,56 @@ export default function SubscriptionPage({ params }: SubscriptionPageProps) {
           );
         })}
       </div>
+
+  {/* 결제 실패 알림 모달 */}
+  <Dialog open={!!paymentError} onOpenChange={() => setPaymentError(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              결제 실패
+            </DialogTitle>
+            <DialogDescription>
+              결제 처리 중 오류가 발생했습니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg bg-red-50 p-4">
+              <p className="text-sm font-semibold text-red-900 mb-2">오류 메시지</p>
+              <p className="text-sm text-red-800">{paymentError?.message}</p>
+              {paymentError?.code && (
+                <p className="mt-2 text-xs text-red-600">오류 코드: {paymentError.code}</p>
+              )}
+            </div>
+
+            {paymentError?.code === 'NOT_SUPPORTED_CARD_TYPE' && (
+              <div className="rounded-lg bg-yellow-50 p-3 border border-yellow-200">
+                <p className="text-xs text-yellow-900">
+                  💡 다른 카드로 시도해주세요. 일부 카드사는 지원되지 않을 수 있습니다.
+                </p>
+              </div>
+            )}
+
+            {paymentError?.code === 'INVALID_CARD_NUMBER' && (
+              <div className="rounded-lg bg-yellow-50 p-3 border border-yellow-200">
+                <p className="text-xs text-yellow-900">
+                  💡 카드 번호를 다시 확인해주세요.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="default"
+              onClick={() => setPaymentError(null)}
+            >
+              확인
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
   {/* 업그레이드 모달 */}
   <Dialog open={isLoading} onOpenChange={setIsLoading}>

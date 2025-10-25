@@ -24,7 +24,9 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     if (!isLoading && !isAuthenticated) {
       router.replace(buildRedirectUrl(pathname));
     }
-  }, [isAuthenticated, isLoading, pathname, router]);
+    // router는 stable하므로 의존성에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isLoading, pathname]);
 
   if (!isAuthenticated) {
     return null;
