@@ -105,31 +105,7 @@ PRD에 명시된 `Flash`와 `Pro` 모델은 각각의 장단점이 있어 전략
 3.  **환경 변수 파일 생성**: 프로젝트 루트에 `.env.local` 파일을 생성하고, Part 1의 **Table 2**에 명시된 모든 API 키와 시크릿을 채워 넣습니다.
 4.  **Supabase 설정**: Supabase 프로젝트를 생성하고, PRD에 명시된 `users`와 `subscriptions` 테이블을 스키마에 맞게 생성합니다. `subscriptions` 테이블에는 `user_id`, `status`, `billing_key`, `customer_key` 등의 컬럼이 포함되어야 합니다.
 
-### Phase 2: 인증 계층 구현 (Clerk)
 
-1.  **Clerk 애플리케이션 설정**: Clerk 대시보드에서 새 애플리케이션을 생성하고 API 키를 발급받습니다.
-2.  **`ClerkProvider` 적용**: `app/layout.tsx` 파일을 수정하여 애플리케이션 전체를 `<ClerkProvider>`로 감싸줍니다.
-3.  **인증 UI 추가**: 헤더 또는 별도의 페이지에 `<SignInButton>`, `<SignUpButton>`, `<UserButton>` 등 Clerk의 사전 빌드 컴포넌트를 사용하여 기본적인 인증 UI를 구성합니다.
-4.  **미들웨어 구성**: `middleware.ts` 파일을 생성하고, 홈페이지, 로그인/회원가입 페이지, 웹훅 엔드포인트 등을 `publicRoutes`로 지정합니다. 또한, Pro 사용자 전용 경로를 보호하는 로직을 추가합니다.
-
-### Phase 3: 핵심 기능 구현 (Gemini)
-
-1.  **API 라우트 생성**: `app/api/saju/route.ts` 파일을 생성합니다.
-2.  **Gemini SDK 연동**: 해당 파일 내에 Gemini SDK를 초기화하고, 프롬프트를 구성하여 사주 풀이 텍스트를 생성하는 `POST` 핸들러 로직을 구현합니다.
-3.  **프론트엔드 구현**: 사용자가 이름과 생년월일시를 입력하고 '분석하기' 버튼을 누르면, 위에서 만든 API 엔드포인트로 요청을 보내고 반환된 분석 결과를 화면에 표시하는 UI를 구축합니다.
-
-### Phase 4: 구독 및 결제 기능 구현 (토스페이먼츠)
-
-1.  **구독 관리 페이지 구축**: 사용자가 현재 구독 상태를 확인하고 'Pro 구독하기' 또는 '구독 해지'를 할 수 있는 페이지를 만듭니다.
-2.  **클라이언트 결제 흐름 구현**: 'Pro 구독하기' 버튼에 토스페이먼츠의 `requestBillingAuth` 함수 호출 로직을 연동하여 카드 등록 절차를 시작하도록 합니다.
-3.  **서버사이드 결제 처리 엔드포인트 생성**:
-      * `app/api/payments/subscribe/route.ts`: `authKey`를 `billingKey`로 교환하고, 첫 결제를 처리하며, 데이터베이스(Supabase)와 사용자 세션(Clerk)의 상태를 업데이트하는 로직을 구현합니다.
-      * 사용자가 구독을 해지할 때 호출될 API 엔드포인트를 만들고, 토스페이먼츠의 빌링키 삭제 API를 호출하는 로직을 구현합니다.
-4.  **정기 결제 Cron Job 설정**:
-      * `app/api/cron/process-subscriptions/route.ts`: 정기 결제를 처리하는 로직을 구현합니다.
-      * Supabase 대시보드에서 이 엔드포인트를 주기적으로 호출하도록 Cron Job을 설정합니다.
-
-### Phase 5: 웹훅 연동 및 최종 테스트
 
 1.  **Clerk 웹훅 핸들러 구현**: `app/api/webhooks/clerk/route.ts`에 `user.created` 이벤트를 처리하는 핸들러를 구현합니다. 반드시 `svix`를 사용한 시그니처 검증 로직을 포함해야 합니다.
 2.  **토스페이먼츠 웹훅 핸들러 구현**: `app/api/webhooks/toss/route.ts`에 `PAYMENT_STATUS_CHANGED` 이벤트를 처리하는 핸들러를 구현합니다. 웹훅 수신 후, 결제 조회 API를 다시 호출하여 상태를 검증하는 보안 패턴을 적용합니다.
