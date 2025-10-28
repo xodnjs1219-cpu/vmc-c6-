@@ -24,6 +24,9 @@ vi.mock('@/backend/supabase', () => ({
 }));
 
 describe('GET /api/analyses/:id', () => {
+  // 테스트 환경에서 필수 환경변수 더미 값 세팅
+  process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-role-key';
   it('Supabase에서 받아온 데이터를 JSON으로 응답한다', async () => {
     const app = createHonoApp();
     const req = new Request('http://localhost/api/analyses/test-id', {
