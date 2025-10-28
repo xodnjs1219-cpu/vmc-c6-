@@ -69,3 +69,11 @@ next-env.d.ts
 /.claude/settings.local.json
 
 repomix-output.xml
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
