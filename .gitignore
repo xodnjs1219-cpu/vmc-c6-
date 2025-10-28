@@ -68,3 +68,4 @@ next-env.d.ts
 # Claude Code
 /.claude/settings.local.json
 
+repomix-output.xml
