@@ -1,0 +1,24 @@
+{
+  "contextFileName": "AGENTS.md",
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "type": "stdio"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-b448b031-c5df-4f7c-bd8c-90552bafedbe"
+      },
+      "type": "stdio"
+    }
+  }
+}
