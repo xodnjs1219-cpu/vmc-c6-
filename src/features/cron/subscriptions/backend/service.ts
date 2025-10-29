@@ -1,13 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { tossClient } from '@/backend/lib/external/toss-client';
 import { clerkClient } from '@/backend/lib/external/clerk-client';
 import { getKSTToday, formatDateToYYYYMMDD, addOneMonth } from '@/features/cron/lib/date-utils';
 import { SubscriptionQuery } from './schema';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
 interface CronResult {
   total_processed: number;
@@ -20,7 +15,7 @@ interface CronResult {
   }>;
 }
 
-export async function processSubscriptions(): Promise<CronResult> {
+export async function processSubscriptions(supabase: SupabaseClient): Promise<CronResult> {
   const result: CronResult = {
     total_processed: 0,
     regular_payments: 0,
@@ -30,10 +25,10 @@ export async function processSubscriptions(): Promise<CronResult> {
 
   try {
     // Process regular payments
-    await processRegularPayments(result);
+    await processRegularPayments(supabase, result);
 
     // Process scheduled cancellations
-    await processScheduledCancellations(result);
+    await processScheduledCancellations(supabase, result);
 
     console.log('[Cron] Subscription processing completed:', result);
     return result;
@@ -48,7 +43,7 @@ export async function processSubscriptions(): Promise<CronResult> {
   }
 }
 
-async function processRegularPayments(result: CronResult): Promise<void> {
+async function processRegularPayments(supabase: SupabaseClient, result: CronResult): Promise<void> {
   const today = getKSTToday();
   const todayStr = formatDateToYYYYMMDD(today);
 
@@ -168,7 +163,7 @@ async function processRegularPayments(result: CronResult): Promise<void> {
   }
 }
 
-async function processScheduledCancellations(result: CronResult): Promise<void> {
+async function processScheduledCancellations(supabase: SupabaseClient, result: CronResult): Promise<void> {
   const today = getKSTToday();
   const todayStr = formatDateToYYYYMMDD(today);
 

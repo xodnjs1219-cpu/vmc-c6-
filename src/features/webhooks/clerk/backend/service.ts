@@ -1,14 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { clerkClient } from '@/backend/lib/external/clerk-client';
 import { ClerkWebhookEvent, UserSyncResponse } from './schema';
 import { SUBSCRIPTION_PLANS } from '@/backend/config/subscription-plans';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-
-export async function processUserCreated(payload: ClerkWebhookEvent): Promise<UserSyncResponse> {
+export async function processUserCreated(
+  payload: ClerkWebhookEvent,
+  supabase: SupabaseClient,
+): Promise<UserSyncResponse> {
   const { id: userId, email_addresses, first_name, last_name, image_url } = payload.data;
   const primaryEmail = email_addresses[0]?.email_address;
 

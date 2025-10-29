@@ -8,6 +8,9 @@ import type { AppEnv } from '@/backend/hono/context';
 export async function registerClerkWebhookRoutes(baseApp: Hono<AppEnv>): Promise<void> {
   baseApp.post('/api/webhooks/clerk', async (c) => {
     try {
+      console.log('[Clerk Webhook] Received webhook request');
+      console.log('[Clerk Webhook] SKIP_WEBHOOK_VALIDATION:', process.env.SKIP_WEBHOOK_VALIDATION);
+
       // Get raw body for signature verification
       const rawBody = await c.req.text();
       const headers: Record<string, string> = {};
@@ -39,8 +42,18 @@ export async function registerClerkWebhookRoutes(baseApp: Hono<AppEnv>): Promise
         throw new HTTPException(400, { message: 'Invalid webhook payload' });
       }
 
+      // Get supabase client from context
+      const supabase = c.get(
+        'supabase',
+      ) as any;
+
+      if (!supabase) {
+        console.error('[Clerk Webhook] Supabase client not available');
+        throw new HTTPException(500, { message: 'Database client not available' });
+      }
+
       // Process the event
-      const response = await processUserCreated(result.data);
+      const response = await processUserCreated(result.data, supabase);
 
       if (!response.success) {
         console.error('[Clerk Webhook] Processing failed:', response.message);

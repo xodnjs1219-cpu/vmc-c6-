@@ -16,8 +16,14 @@ export async function registerCronRoutes(baseApp: Hono<AppEnv>): Promise<void> {
         throw new HTTPException(401, { message: 'Unauthorized' });
       }
 
+      // Get supabase from context
+      const supabase = c.get('supabase') as any;
+      if (!supabase) {
+        throw new HTTPException(500, { message: 'Database client not available' });
+      }
+
       // Process subscriptions
-      const result = await processSubscriptions();
+      const result = await processSubscriptions(supabase);
 
       const response: CronResponse = {
         success: true,
