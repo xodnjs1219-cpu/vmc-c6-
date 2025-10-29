@@ -9,4 +9,6 @@ export {
   failure,
   unwrap,
   unwrapOr,
+  isOk,
+  isError,
 } from './result';

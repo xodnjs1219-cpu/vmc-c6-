@@ -3,7 +3,7 @@ import { generateAnalysisWithGeminiRetry } from '@/backend/lib/external/gemini-c
 import type { CreateAnalysisRequest, CreateAnalysisResponse } from './create-schema';
 import { UserManagementService } from '@/backend/services/user-management';
 import { SubscriptionManagementService } from '@/backend/services/subscription-management';
-import { ErrorCodes } from '@/backend/errors';
+import { ErrorCodes, isError } from '@/backend/errors';
 
 /**
  * 사주 분석을 생성합니다.
@@ -32,11 +32,12 @@ export async function createAnalysis(
     // 1. 사용자 존재 여부 확인 (없으면 Clerk에서 가져와 생성)
     const userResult = await userService.getOrCreateUser(userId);
     if (!userResult.ok) {
-      console.error('[createAnalysis] User error:', userResult.error);
+      const errorResult = userResult as any;
+      console.error('[createAnalysis] User error:', errorResult.error);
       return {
         status: 'error',
-        errorCode: userResult.error.code,
-        message: userResult.error.message,
+        errorCode: errorResult.error.code,
+        message: errorResult.error.message,
       };
     }
     console.log('[createAnalysis] User verified:', userResult.value.id);
@@ -44,11 +45,12 @@ export async function createAnalysis(
     // 2. 구독 상태 확인 (없으면 자동 생성)
     const subscriptionResult = await subscriptionService.getOrCreateSubscription(userId);
     if (!subscriptionResult.ok) {
-      console.error('[createAnalysis] Subscription error:', subscriptionResult.error);
+      const errorResult = subscriptionResult as any;
+      console.error('[createAnalysis] Subscription error:', errorResult.error);
       return {
         status: 'error',
-        errorCode: subscriptionResult.error.code,
-        message: subscriptionResult.error.message,
+        errorCode: errorResult.error.code,
+        message: errorResult.error.message,
       };
     }
     const subscription = subscriptionResult.value;
@@ -143,14 +145,15 @@ export async function createAnalysis(
     // 횟수 차감
     const deductResult = await subscriptionService.deductQuota(userId);
     if (!deductResult.ok) {
-      console.error('[createAnalysis] Quota deduction error:', deductResult.error);
+      const errorResult = deductResult as any;
+      console.error('[createAnalysis] Quota deduction error:', errorResult.error);
       // 횟수 차감 실패 시 분석 레코드 삭제 (롤백)
       await supabase.from('analyses').delete().eq('id', analysis.id);
 
       return {
         status: 'error',
-        errorCode: deductResult.error.code,
-        message: deductResult.error.message,
+        errorCode: errorResult.error.code,
+        message: errorResult.error.message,
       };
     }
 

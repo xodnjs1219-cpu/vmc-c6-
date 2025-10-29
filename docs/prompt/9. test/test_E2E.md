@@ -199,6 +199,7 @@ Verify expected outcome
 
 ```bash
 docs\test\test_E2E.md 를 참조
+테스트를 구현하고
 현재 프로젝트가 모든 테스트를 통과할 때까지 코드를 수정하라
 TDD 방법론을 따라라
 ```

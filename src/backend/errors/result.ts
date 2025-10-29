@@ -30,7 +30,7 @@ export function unwrap<T, E>(result: Result<T, E>): T {
   if (result.ok) {
     return result.value;
   }
-  throw result.error;
+  throw (result as { ok: false; error: E }).error;
 }
 
 /**
@@ -38,4 +38,18 @@ export function unwrap<T, E>(result: Result<T, E>): T {
  */
 export function unwrapOr<T, E>(result: Result<T, E>, defaultValue: T): T {
   return result.ok ? result.value : defaultValue;
+}
+
+/**
+ * Result 타입 가드: 성공 여부 확인
+ */
+export function isOk<T, E>(result: Result<T, E>): result is { ok: true; value: T } {
+  return result.ok;
+}
+
+/**
+ * Result 타입 가드: 실패 여부 확인
+ */
+export function isError<T, E>(result: Result<T, E>): result is { ok: false; error: E } {
+  return !result.ok;
 }

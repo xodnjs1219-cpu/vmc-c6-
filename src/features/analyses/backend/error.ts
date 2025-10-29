@@ -3,6 +3,8 @@ export const analysesErrorCodes = {
   unauthorized: 'UNAUTHORIZED',
   databaseError: 'DATABASE_ERROR',
   validationError: 'VALIDATION_ERROR',
+  quotaExceeded: 'QUOTA_EXCEEDED',
+  notFound: 'NOT_FOUND',
 } as const;
 
 type AnalysesErrorValue =

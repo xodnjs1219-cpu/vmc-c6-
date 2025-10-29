@@ -156,7 +156,8 @@ export class SubscriptionManagementService {
     // 현재 구독 정보 조회
     const subResult = await this.getSubscription(userId);
     if (!subResult.ok) {
-      return failure(subResult.error);
+      const errorResult = subResult as any;
+      return failure(errorResult.error);
     }
 
     const subscription = subResult.value;
