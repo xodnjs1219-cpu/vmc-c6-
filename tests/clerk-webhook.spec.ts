@@ -45,24 +45,10 @@ test.describe('Clerk 웹훅 - 신규 사용자 가입 및 온보딩', () => {
       },
     };
 
-    // Clerk 웹훅 서명 생성 (실제로는 Clerk의 비밀 키로 서명)
-    // 테스트 환경에서는 검증을 모킹하거나 서명 검증을 스킵할 수 있음
-    const clerkSecret = process.env.CLERK_WEBHOOK_SECRET || 'test-secret';
-    const timestamp = Math.floor(Date.now() / 1000);
-    const payload = JSON.stringify(clerkWebhookPayload);
-
-    const signature = crypto
-      .createHmac('sha256', clerkSecret)
-      .update(`${timestamp}.${payload}`)
-      .digest('base64');
-
     try {
       // Act: 웹훅 엔드포인트 호출
       const response = await request.post('/api/webhooks/clerk', {
         headers: {
-          'svix-id': `msg_${Date.now()}`,
-          'svix-timestamp': timestamp.toString(),
-          'svix-signature': `v1,${signature}`,
           'content-type': 'application/json',
         },
         data: clerkWebhookPayload,

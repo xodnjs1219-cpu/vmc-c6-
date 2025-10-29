@@ -75,7 +75,7 @@ export function registerAnalysisCreateRoute(app: Hono<AppEnv>) {
 
         let statusCode: ContentfulStatusCode = 500 as ContentfulStatusCode;
         if (result.errorCode === 'QUOTA_EXCEEDED') {
-          statusCode = 403 as ContentfulStatusCode;
+          statusCode = 402 as ContentfulStatusCode;
         } else if (result.errorCode === 'EXTERNAL_SERVICE_ERROR') {
           statusCode = 503 as ContentfulStatusCode;
         } else if (result.errorCode === 'INVALID_INPUT') {

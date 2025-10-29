@@ -1,9 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// 지연 로드: 테스트 실행 시에만 초기화
+let supabase: ReturnType<typeof createClient> | null = null;
+
+function getSupabase() {
+  if (!supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+      throw new Error(
+        'Supabase credentials not found. Please check .env.local file.'
+      );
+    }
+
+    supabase = createClient(url, key);
+  }
+  return supabase;
+}
 
 export interface TestUser {
   id: string;
@@ -34,10 +48,11 @@ export interface TestAnalysis {
 }
 
 // 사용자 생성 (자동으로 Free 구독 생성됨)
-export async function createUser(user: TestUser) {
-  const { data, error } = await supabase.from('users').insert([user]).select();
+export async function createUser(user: TestUser): Promise<TestUser> {
+  const sb = getSupabase();
+  const { data, error } = await (sb.from('users').insert([user] as any).select() as any);
   if (error) throw new Error(`Failed to create user: ${error.message}`);
-  return data?.[0];
+  return (data?.[0] || user) as TestUser;
 }
 
 // 구독 정보 업데이트
@@ -45,28 +60,31 @@ export async function updateSubscription(
   userId: string,
   subscription: Partial<TestSubscription>
 ) {
-  const { data, error } = await supabase
+  const sb = getSupabase();
+  const { data, error } = await (sb
     .from('subscriptions')
-    .update(subscription)
+    .update(subscription as any)
     .eq('user_id', userId)
-    .select();
+    .select() as any);
   if (error) throw new Error(`Failed to update subscription: ${error.message}`);
   return data?.[0];
 }
 
 // 분석 생성
 export async function createAnalysis(analysis: TestAnalysis) {
-  const { data, error } = await supabase
+  const sb = getSupabase();
+  const { data, error } = await (sb
     .from('analyses')
-    .insert([analysis])
-    .select();
+    .insert([analysis] as any)
+    .select() as any);
   if (error) throw new Error(`Failed to create analysis: ${error.message}`);
   return data?.[0];
 }
 
 // 사용자 정보 조회
 export async function getUser(userId: string) {
-  const { data, error } = await supabase
+  const sb = getSupabase();
+  const { data, error } = await sb
     .from('users')
     .select()
     .eq('id', userId)
@@ -79,7 +97,8 @@ export async function getUser(userId: string) {
 
 // 구독 정보 조회
 export async function getSubscription(userId: string) {
-  const { data, error } = await supabase
+  const sb = getSupabase();
+  const { data, error } = await sb
     .from('subscriptions')
     .select()
     .eq('user_id', userId)
@@ -92,7 +111,8 @@ export async function getSubscription(userId: string) {
 
 // 분석 목록 조회
 export async function getAnalysesByUser(userId: string) {
-  const { data, error } = await supabase
+  const sb = getSupabase();
+  const { data, error } = await sb
     .from('analyses')
     .select()
     .eq('user_id', userId)
@@ -103,9 +123,10 @@ export async function getAnalysesByUser(userId: string) {
 
 // 전체 정리 (사용자 및 관련 데이터 삭제)
 export async function cleanupUser(userId: string) {
-  await supabase.from('analyses').delete().eq('user_id', userId);
-  await supabase.from('subscriptions').delete().eq('user_id', userId);
-  await supabase.from('users').delete().eq('id', userId);
+  const sb = getSupabase();
+  await sb.from('analyses').delete().eq('user_id', userId);
+  await sb.from('subscriptions').delete().eq('user_id', userId);
+  await sb.from('users').delete().eq('id', userId);
 }
 
 // 테스트 데이터 팩토리: Free 사용자

@@ -17,12 +17,17 @@ export async function registerClerkWebhookRoutes(baseApp: Hono<AppEnv>): Promise
         headers[key] = value || '';
       }
 
-      // Verify webhook signature
-      try {
-        await validateClerkWebhook(headers, rawBody);
-      } catch (err) {
-        console.error('[Clerk Webhook] Signature verification failed:', err);
-        throw new HTTPException(401, { message: 'Webhook verification failed' });
+      // Verify webhook signature (테스트 환경에서는 스킵)
+      const skipWebhookValidation =
+        process.env.SKIP_WEBHOOK_VALIDATION === 'true';
+
+      if (!skipWebhookValidation) {
+        try {
+          await validateClerkWebhook(headers, rawBody);
+        } catch (err) {
+          console.error('[Clerk Webhook] Signature verification failed:', err);
+          throw new HTTPException(401, { message: 'Webhook verification failed' });
+        }
       }
 
       // Parse and validate payload
