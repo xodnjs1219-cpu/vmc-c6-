@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { clerkClient } from '@/backend/lib/external/clerk-client';
 import { ClerkWebhookEvent, UserSyncResponse } from './schema';
+import { SUBSCRIPTION_PLANS } from '@/backend/config/subscription-plans';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -19,6 +20,8 @@ export async function processUserCreated(payload: ClerkWebhookEvent): Promise<Us
   }
 
   try {
+    const freePlan = SUBSCRIPTION_PLANS.Free;
+
     // Start transaction
     const { error: userError } = await supabase.from('users').upsert(
       {
@@ -44,8 +47,8 @@ export async function processUserCreated(payload: ClerkWebhookEvent): Promise<Us
     const { error: subscriptionError } = await supabase.from('subscriptions').upsert(
       {
         user_id: userId,
-        plan_type: 'Free',
-        remaining_tries: 3,
+        plan_type: freePlan.name,
+        remaining_tries: freePlan.monthlyQuota,
         billing_key: null,
         customer_key: null,
         next_payment_date: null,
@@ -66,7 +69,7 @@ export async function processUserCreated(payload: ClerkWebhookEvent): Promise<Us
     // Update Clerk metadata
     try {
       await clerkClient.updateUserPublicMetadata(userId, {
-        subscription: 'Free',
+        subscription: freePlan.name,
       });
     } catch (err) {
       console.error('[Clerk Webhook] Failed to update Clerk metadata:', err);

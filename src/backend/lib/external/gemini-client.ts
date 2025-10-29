@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ErrorCodes } from '@/backend/errors';
 
-const GEMINI_TIMEOUT = 90000; // 60초 타임아웃 (사주 분석은 시간이 걸릴 수 있음)
+const GEMINI_TIMEOUT = 90000; // 90초 타임아웃 (사주 분석은 시간이 걸릴 수 있음)
 
 /**
  * Gemini API를 통해 사주 분석 콘텐츠를 생성합니다.
@@ -65,13 +66,13 @@ export async function generateAnalysisWithGemini(
     console.error('[generateAnalysisWithGemini] Error occurred:', error);
     if (error instanceof Error) {
       if (error.message.includes('timeout')) {
-        throw new Error('GEMINI_TIMEOUT');
+        throw new Error(ErrorCodes.GEMINI_TIMEOUT);
       }
       if (error.message.includes('API key')) {
-        throw new Error('GEMINI_AUTH_ERROR');
+        throw new Error(ErrorCodes.GEMINI_AUTH_ERROR);
       }
       if (error.message.includes('rate limit')) {
-        throw new Error('GEMINI_RATE_LIMIT');
+        throw new Error(ErrorCodes.GEMINI_RATE_LIMIT);
       }
     }
     throw error;
@@ -135,8 +136,8 @@ export async function generateAnalysisWithGeminiRetry(
 
       // 타임아웃이나 서버 에러인 경우만 재시도
       if (
-        lastError.message === 'GEMINI_TIMEOUT' ||
-        lastError.message === 'GEMINI_RATE_LIMIT'
+        lastError.message === ErrorCodes.GEMINI_TIMEOUT ||
+        lastError.message === ErrorCodes.GEMINI_RATE_LIMIT
       ) {
         if (attempt < maxRetries) {
           // 지수 백오프: 1초, 2초, 4초...

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { TossPaymentsClient } from '@/backend/lib/external/toss-client';
+import { SUBSCRIPTION_PLANS } from '@/backend/config/subscription-plans';
+import { ErrorCodes } from '@/backend/errors';
 
 export async function initiateSubscription(
   supabase: SupabaseClient,
@@ -9,7 +11,7 @@ export async function initiateSubscription(
   customerPhone: string
 ): Promise<
   | { status: 'success'; checkoutUrl: string; orderId: string }
-  | { status: 'error'; message: string }
+  | { status: 'error'; errorCode: string; message: string }
 > {
   try {
     // 1. 현재 구독 상태 확인
@@ -22,6 +24,7 @@ export async function initiateSubscription(
     if (subError) {
       return {
         status: 'error',
+        errorCode: ErrorCodes.SUBSCRIPTION_NOT_FOUND,
         message: '구독 정보를 찾을 수 없습니다.',
       };
     }
@@ -30,18 +33,19 @@ export async function initiateSubscription(
     if (subscription?.plan_type === 'Pro') {
       return {
         status: 'error',
+        errorCode: ErrorCodes.ALREADY_SUBSCRIBED,
         message: '이미 Pro 구독 중입니다.',
       };
     }
 
     // 3. 결제 키 생성 (실제로는 Toss API를 통해 얻음)
     const orderId = `${userId}-${Date.now()}`;
-    const amount = 3900; // 월 구독료
+    const proPlan = SUBSCRIPTION_PLANS.Pro;
 
     // 4. Toss Payments 청구 키 등록
     // 실제 구현에서는 클라이언트에서 카드 정보를 받아 서버에서 처리
     // 여기서는 orderId 반환 (실제 결제는 클라이언트에서 진행)
-    const checkoutUrl = `/api/payments/checkout?orderId=${orderId}&amount=${amount}&customerName=${encodeURIComponent(customerName)}&customerEmail=${encodeURIComponent(customerEmail)}&customerPhone=${encodeURIComponent(customerPhone)}`;
+    const checkoutUrl = `/api/payments/checkout?orderId=${orderId}&amount=${proPlan.price}&customerName=${encodeURIComponent(customerName)}&customerEmail=${encodeURIComponent(customerEmail)}&customerPhone=${encodeURIComponent(customerPhone)}`;
 
     return {
       status: 'success',
@@ -52,6 +56,7 @@ export async function initiateSubscription(
     console.error('Subscription initiation error:', error);
     return {
       status: 'error',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
       message: '구독 요청 중 오류가 발생했습니다.',
     };
   }
@@ -66,31 +71,33 @@ export async function confirmSubscription(
   billingKey: string
 ): Promise<
   | { status: 'success'; message: string }
-  | { status: 'error'; message: string }
+  | { status: 'error'; errorCode: string; message: string }
 > {
   try {
-    const now = new Date().toISOString();
-
-    // 다음 결제일 계산 (1개월 후)
-    const nextPaymentDate = new Date();
+    // date-fns를 사용하지 않고 간단한 날짜 계산 (의존성 추가 없이)
+    const now = new Date();
+    const nextPaymentDate = new Date(now);
     nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
     const nextPaymentDateStr = nextPaymentDate.toISOString().split('T')[0];
+
+    const proPlan = SUBSCRIPTION_PLANS.Pro;
 
     // 1. subscriptions 테이블 업데이트
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        plan_type: 'Pro',
+        plan_type: proPlan.name,
         billing_key: billingKey,
         next_payment_date: nextPaymentDateStr,
-        remaining_tries: 10, // Pro 플랜: 월 10회
-        updated_at: now,
+        remaining_tries: proPlan.monthlyQuota,
+        updated_at: now.toISOString(),
       })
       .eq('user_id', userId);
 
     if (updateError) {
       return {
         status: 'error',
+        errorCode: ErrorCodes.DATABASE_ERROR,
         message: '구독 정보 업데이트에 실패했습니다.',
       };
     }
@@ -103,6 +110,7 @@ export async function confirmSubscription(
     console.error('Subscription confirmation error:', error);
     return {
       status: 'error',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
       message: '구독 확인 중 오류가 발생했습니다.',
     };
   }
@@ -116,7 +124,7 @@ export async function scheduleSubscriptionCancellation(
   userId: string
 ): Promise<
   | { status: 'success'; message: string }
-  | { status: 'error'; message: string }
+  | { status: 'error'; errorCode: string; message: string }
 > {
   try {
     const now = new Date().toISOString();
@@ -132,6 +140,7 @@ export async function scheduleSubscriptionCancellation(
     if (error) {
       return {
         status: 'error',
+        errorCode: ErrorCodes.DATABASE_ERROR,
         message: '구독 취소 요청이 실패했습니다.',
       };
     }
@@ -144,6 +153,7 @@ export async function scheduleSubscriptionCancellation(
     console.error('Subscription cancellation error:', error);
     return {
       status: 'error',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
       message: '구독 취소 중 오류가 발생했습니다.',
     };
   }

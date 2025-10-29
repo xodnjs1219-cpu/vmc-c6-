@@ -76,7 +76,7 @@ describe('generateAnalysisWithGeminiRetry', () => {
 
   it('TC-009: 최대 재시도 초과', async () => {
     // Arrange: 3회 모두 실패
-  mockGeminiModel.generateContent.mockRejectedValue(new Error('Gemini API timeout'));
+    mockGeminiModel.generateContent.mockRejectedValue(new Error('GEMINI_TIMEOUT'));
 
     // Act & Assert: 최대 재시도 초과로 에러 발생
     await expect(
@@ -93,7 +93,7 @@ describe('generateAnalysisWithGeminiRetry', () => {
       )
     ).rejects.toThrow('GEMINI_TIMEOUT');
 
-  expect(mockGeminiModel.generateContent).toHaveBeenCalledTimes(3); // 초기 1회 + 재시도 2회
+    expect(mockGeminiModel.generateContent).toHaveBeenCalledTimes(3); // 초기 1회 + 재시도 2회
   });
 
   it('TC-010: 지수 백오프 확인', async () => {
@@ -102,8 +102,8 @@ describe('generateAnalysisWithGeminiRetry', () => {
 
     const mockResponse = { response: { text: () => '결과' } };
     mockGeminiModel.generateContent
-      .mockRejectedValueOnce(new Error('GEMINI_TIMEOUT'))
-      .mockRejectedValueOnce(new Error('GEMINI_TIMEOUT'))
+      .mockRejectedValueOnce(new Error('Gemini API timeout'))
+      .mockRejectedValueOnce(new Error('Gemini API timeout'))
       .mockResolvedValueOnce(mockResponse);
 
     // Act: 재시도 호출 시작
@@ -121,11 +121,11 @@ describe('generateAnalysisWithGeminiRetry', () => {
 
     // 첫 번째 재시도 대기 (1초)
     await vi.advanceTimersByTimeAsync(1000);
-  expect(mockGeminiModel.generateContent).toHaveBeenCalledTimes(2);
+    expect(mockGeminiModel.generateContent).toHaveBeenCalledTimes(2);
 
     // 두 번째 재시도 대기 (2초)
     await vi.advanceTimersByTimeAsync(2000);
-  expect(mockGeminiModel.generateContent).toHaveBeenCalledTimes(3);
+    expect(mockGeminiModel.generateContent).toHaveBeenCalledTimes(3);
 
     // Promise 완료 대기
     const result = await promise;

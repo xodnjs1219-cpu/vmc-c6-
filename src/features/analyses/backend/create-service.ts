@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateAnalysisWithGeminiRetry } from '@/backend/lib/external/gemini-client';
-import { clerkClient } from '@/backend/lib/external/clerk-client';
 import type { CreateAnalysisRequest, CreateAnalysisResponse } from './create-schema';
+import { UserManagementService } from '@/backend/services/user-management';
+import { SubscriptionManagementService } from '@/backend/services/subscription-management';
+import { ErrorCodes } from '@/backend/errors';
 
 /**
  * 사주 분석을 생성합니다.
@@ -24,121 +26,39 @@ export async function createAnalysis(
   try {
     console.log('[createAnalysis] Starting analysis creation for user:', userId);
 
+    const userService = new UserManagementService(supabase);
+    const subscriptionService = new SubscriptionManagementService(supabase);
+
     // 1. 사용자 존재 여부 확인 (없으면 Clerk에서 가져와 생성)
-    let { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (userError && userError.code === 'PGRST116') {
-      console.log('[createAnalysis] User not found in database, fetching from Clerk');
-      
-      // Clerk에서 사용자 정보 가져오기
-      try {
-        const clerkUser = await clerkClient.getUser(userId);
-        
-        if (!clerkUser) {
-          console.error('[createAnalysis] User not found in Clerk:', userId);
-          return {
-            status: 'error',
-            errorCode: 'USER_NOT_FOUND',
-            message: '사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.',
-          };
-        }
-
-        // 사용자 정보 데이터베이스에 생성
-        const { data: newUser, error: createUserError } = await supabase
-          .from('users')
-          .insert({
-            id: clerkUser.id,
-            email: clerkUser.email_addresses[0]?.email_address,
-            first_name: clerkUser.first_name,
-            last_name: clerkUser.last_name,
-            image_url: clerkUser.image_url,
-          })
-          .select('id')
-          .single();
-
-        if (createUserError) {
-          console.error('[createAnalysis] Failed to create user:', createUserError);
-          return {
-            status: 'error',
-            errorCode: 'USER_CREATE_FAILED',
-            message: '사용자 정보 생성에 실패했습니다.',
-          };
-        }
-
-        user = newUser;
-        console.log('[createAnalysis] User created:', user.id);
-      } catch (clerkError) {
-        console.error('[createAnalysis] Clerk API error:', clerkError);
-        return {
-          status: 'error',
-          errorCode: 'CLERK_API_ERROR',
-          message: '사용자 정보 조회에 실패했습니다.',
-        };
-      }
-    } else if (userError) {
-      console.error('[createAnalysis] User query error:', userError);
+    const userResult = await userService.getOrCreateUser(userId);
+    if (!userResult.ok) {
+      console.error('[createAnalysis] User error:', userResult.error);
       return {
         status: 'error',
-        errorCode: 'USER_QUERY_ERROR',
-        message: '사용자 정보 조회에 실패했습니다.',
+        errorCode: userResult.error.code,
+        message: userResult.error.message,
       };
-    } else {
-      console.log('[createAnalysis] User found:', user.id);
     }
+    console.log('[createAnalysis] User verified:', userResult.value.id);
 
     // 2. 구독 상태 확인 (없으면 자동 생성)
-    let { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select('plan_type, remaining_tries')
-      .eq('user_id', userId)
-      .single();
-
-    // subscription이 없으면 자동으로 Free 플랜 생성
-    if (subError && subError.code === 'PGRST116') {
-      console.log('[createAnalysis] Subscription not found, creating Free subscription');
-      
-      const { data: newSubscription, error: createError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          plan_type: 'Free',
-          remaining_tries: 3,
-          customer_key: userId,
-        })
-        .select('plan_type, remaining_tries')
-        .single();
-
-      if (createError) {
-        console.error('[createAnalysis] Failed to create subscription:', createError);
-        return {
-          status: 'error',
-          errorCode: 'SUBSCRIPTION_CREATE_FAILED',
-          message: '구독 정보 생성에 실패했습니다.',
-        };
-      }
-
-      subscription = newSubscription;
-      console.log('[createAnalysis] Free subscription created:', subscription);
-    } else if (subError) {
-      console.error('[createAnalysis] Subscription query error:', subError);
+    const subscriptionResult = await subscriptionService.getOrCreateSubscription(userId);
+    if (!subscriptionResult.ok) {
+      console.error('[createAnalysis] Subscription error:', subscriptionResult.error);
       return {
         status: 'error',
-        errorCode: 'SUBSCRIPTION_QUERY_ERROR',
-        message: '구독 정보 조회에 실패했습니다.',
+        errorCode: subscriptionResult.error.code,
+        message: subscriptionResult.error.message,
       };
-    } else {
-      console.log('[createAnalysis] Subscription found:', subscription);
     }
+    const subscription = subscriptionResult.value;
+    console.log('[createAnalysis] Subscription verified:', subscription.plan_type);
 
     // 3. 남은 횟수 확인
-    if (!subscription || subscription.remaining_tries <= 0) {
+    if (subscription.remaining_tries <= 0) {
       return {
         status: 'error',
-        errorCode: 'QUOTA_EXCEEDED',
+        errorCode: ErrorCodes.QUOTA_EXCEEDED,
         message: '무료 분석 횟수를 모두 사용했습니다.',
       };
     }
@@ -164,17 +84,17 @@ export async function createAnalysis(
       const errorMsg =
         error instanceof Error ? error.message : '알 수 없는 오류';
 
-      if (errorMsg === 'GEMINI_TIMEOUT') {
+      if (errorMsg === ErrorCodes.GEMINI_TIMEOUT) {
         return {
           status: 'error',
-          errorCode: 'EXTERNAL_SERVICE_ERROR',
+          errorCode: ErrorCodes.EXTERNAL_SERVICE_ERROR,
           message: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         };
       }
 
       return {
         status: 'error',
-        errorCode: 'EXTERNAL_SERVICE_ERROR',
+        errorCode: ErrorCodes.EXTERNAL_SERVICE_ERROR,
         message: '분석 생성 중 오류가 발생했습니다. 다시 시도해주세요.',
       };
     }
@@ -204,57 +124,58 @@ export async function createAnalysis(
       console.error('[createAnalysis] Database insert error:', insertError);
       return {
         status: 'error',
-        errorCode: 'DATABASE_ERROR',
+        errorCode: ErrorCodes.DATABASE_ERROR,
         message: '분석 결과 저장에 실패했습니다. 다시 시도해주세요.',
       };
     }
 
-    console.log('[createAnalysis] Analysis inserted:', analysis?.id);
-
-    // 횟수 차감
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update({
-        remaining_tries: subscription.remaining_tries - 1,
-        updated_at: now,
-      })
-      .eq('user_id', userId);
-
-    if (updateError) {
-      console.error('[createAnalysis] Subscription update error:', updateError);
-      // 횟수 차감 실패 시 분석 레코드 삭제 (롤백)
-      if (analysis?.id) {
-        await supabase.from('analyses').delete().eq('id', analysis.id);
-      }
-
+    if (!analysis) {
+      console.error('[createAnalysis] Analysis creation returned null');
       return {
         status: 'error',
-        errorCode: 'DATABASE_ERROR',
-        message: '분석 횟수 저장에 실패했습니다. 다시 시도해주세요.',
+        errorCode: ErrorCodes.DATABASE_ERROR,
+        message: '분석 결과 저장에 실패했습니다.',
       };
     }
 
+    console.log('[createAnalysis] Analysis inserted:', analysis.id);
+
+    // 횟수 차감
+    const deductResult = await subscriptionService.deductQuota(userId);
+    if (!deductResult.ok) {
+      console.error('[createAnalysis] Quota deduction error:', deductResult.error);
+      // 횟수 차감 실패 시 분석 레코드 삭제 (롤백)
+      await supabase.from('analyses').delete().eq('id', analysis.id);
+
+      return {
+        status: 'error',
+        errorCode: deductResult.error.code,
+        message: deductResult.error.message,
+      };
+    }
+
+    const newRemainingTries = deductResult.value;
     console.log('[createAnalysis] Analysis creation completed successfully');
 
     return {
       status: 'success',
       data: {
-        id: analysis!.id,
-        name: analysis!.name,
-        birth_date: analysis!.birth_date,
-        birth_time: analysis!.birth_time,
-        is_lunar: analysis!.is_lunar,
-        model_type: analysis!.model_type,
+        id: analysis.id,
+        name: analysis.name,
+        birth_date: analysis.birth_date,
+        birth_time: analysis.birth_time,
+        is_lunar: analysis.is_lunar,
+        model_type: analysis.model_type,
         content,
-        created_at: analysis!.created_at,
-        remaining_tries: subscription.remaining_tries - 1,
+        created_at: analysis.created_at,
+        remaining_tries: newRemainingTries,
       },
     };
   } catch (error) {
     console.error('Unexpected error in createAnalysis:', error);
     return {
       status: 'error',
-      errorCode: 'INTERNAL_ERROR',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
       message: '예기치 않은 오류가 발생했습니다.',
     };
   }
