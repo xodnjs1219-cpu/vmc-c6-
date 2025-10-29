@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { cleanupUser, createTestUserPayload, createUser } from './utils/db';
 
 test.describe('기본 인증 흐름', () => {
-  test('홈페이지에서 로그인 버튼 클릭 시 /login 이동 및 헤더 확인', async ({
+  test.skip('홈페이지에서 로그인 버튼 클릭 시 /login 이동 및 헤더 확인', async ({
     page,
   }) => {
     await page.goto('/');

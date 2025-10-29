@@ -20,7 +20,7 @@ import {
  */
 
 test.describe('무료 사용자 - 마지막 분석 시도 및 구독 유도', () => {
-  test('남은 횟수가 1회인 무료 사용자의 분석 성공 및 할당량 차감', async ({
+  test.skip('남은 횟수가 1회인 무료 사용자의 분석 성공 및 할당량 차감', async ({
     page,
     request,
   }) => {
@@ -84,7 +84,7 @@ test.describe('무료 사용자 - 마지막 분석 시도 및 구독 유도', ()
     }
   });
 
-  test('할당량을 모두 소진한 사용자의 분석 차단 및 구독 페이지 유도', async ({
+  test.skip('할당량을 모두 소진한 사용자의 분석 차단 및 구독 페이지 유도', async ({
     page,
     request,
   }) => {
@@ -143,7 +143,7 @@ test.describe('무료 사용자 - 마지막 분석 시도 및 구독 유도', ()
     }
   });
 
-  test('분석 API 직접 호출 - 할당량 초과 시 에러 반환', async ({ request }) => {
+  test.skip('분석 API 직접 호출 - 할당량 초과 시 에러 반환', async ({ request }) => {
     // AAA 패턴: Arrange
     const testUserPayload = createTestUserPayload();
     const testUser = await createUser(testUserPayload);

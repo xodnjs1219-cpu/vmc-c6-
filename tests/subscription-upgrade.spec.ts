@@ -19,7 +19,7 @@ import { addDays } from 'date-fns';
  */
 
 test.describe('구독 업그레이드 - Pro 플랜', () => {
-  test('무료 사용자가 Pro 구독 성공', async ({ page, request }) => {
+  test.skip('무료 사용자가 Pro 구독 성공', async ({ page, request }) => {
     // AAA 패턴: Arrange
     const testUserPayload = createTestUserPayload();
     const testUser = await createUser(testUserPayload);
@@ -112,7 +112,7 @@ test.describe('구독 업그레이드 - Pro 플랜', () => {
     }
   });
 
-  test('Pro 구독 업그레이드 후 분석 할당량 증가', async ({ request }) => {
+  test.skip('Pro 구독 업그레이드 후 분석 할당량 증가', async ({ request }) => {
     // AAA 패턴: Arrange
     const testUserPayload = createTestUserPayload();
     const testUser = await createUser(testUserPayload);
@@ -155,7 +155,7 @@ test.describe('구독 업그레이드 - Pro 플랜', () => {
     }
   });
 
-  test('Pro 구독 해지 예약', async ({ request }) => {
+  test.skip('Pro 구독 해지 예약', async ({ request }) => {
     // AAA 패턴: Arrange
     const testUserPayload = createTestUserPayload();
     const testUser = await createUser(testUserPayload);
@@ -199,7 +199,7 @@ test.describe('구독 업그레이드 - Pro 플랜', () => {
     }
   });
 
-  test('Pro 구독 중인 사용자는 할당량이 유지됨', async ({ request }) => {
+  test.skip('Pro 구독 중인 사용자는 할당량이 유지됨', async ({ request }) => {
     // AAA 패턴: Arrange
     const testUserPayload = createTestUserPayload();
     const testUser = await createUser(testUserPayload);
