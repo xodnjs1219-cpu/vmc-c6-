@@ -12,7 +12,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // OneDrive 동기화로 인한 무한 리빌딩 방지
+  // Turbopack 설정 - OneDrive 동기화로 인한 무한 리빌딩 방지
+  experimental: {
+    turbo: {
+      // Turbopack watch 옵션 설정
+      resolveAlias: {},
+      resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+    },
+  },
+  // Webpack 설정 (Turbopack이 아닐 때를 위한 fallback)
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.watchOptions = {

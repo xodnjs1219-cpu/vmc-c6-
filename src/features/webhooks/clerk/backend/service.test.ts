@@ -1,25 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { processUserCreated } from './service';
 import { clerkClient } from '@/backend/lib/external/clerk-client';
-
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Mock Clerk 클라이언트
 vi.mock('@/backend/lib/external/clerk-client');
 
-// Mock supabase-js createClient (DB fetch 방지)
-vi.mock('@supabase/supabase-js', () => {
-  return {
-    createClient: vi.fn(() => {
+// Mock 함수 생성 헬퍼
+const createMockSupabaseClient = (options: {
+  shouldFailUser?: boolean;
+  shouldFailSubscription?: boolean
+} = {}): SupabaseClient => {
+  const mockFrom = vi.fn((table: string) => {
+    if (table === 'users' && options.shouldFailUser) {
       return {
-        from: vi.fn(() => ({
-          upsert: vi.fn(() => ({
-            onConflict: vi.fn(() => Promise.resolve({ error: null })),
-          })),
-        })),
+        upsert: vi.fn(() =>
+          Promise.resolve({ error: { message: 'User insert failed' } })
+        ),
       };
-    }),
-  };
-});
+    }
+    if (table === 'subscriptions' && options.shouldFailSubscription) {
+      return {
+        upsert: vi.fn(() =>
+          Promise.resolve({ error: { message: 'Subscription insert failed' } })
+        ),
+      };
+    }
+    return {
+      upsert: vi.fn(() => Promise.resolve({ error: null })),
+    };
+  });
+
+  return {
+    from: mockFrom,
+  } as unknown as SupabaseClient;
+};
 
 describe('processUserCreated', () => {
   beforeEach(() => {
@@ -40,8 +55,10 @@ describe('processUserCreated', () => {
       },
     };
 
+    const mockSupabase = createMockSupabaseClient();
+
     // Act: 사용자 생성 처리
-    const result = await processUserCreated(mockEvent);
+    const result = await processUserCreated(mockEvent, mockSupabase);
 
     // Assert: 성공 결과 확인
     expect(result.success).toBe(true);
@@ -52,6 +69,10 @@ describe('processUserCreated', () => {
     expect(clerkClient.updateUserPublicMetadata).toHaveBeenCalledWith('user_clerk_123', {
       subscription: 'Free',
     });
+
+    // DB 호출 확인
+    expect(mockSupabase.from).toHaveBeenCalledWith('users');
+    expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions');
   });
 
   it('TC-012: 중복 이벤트 멱등성 보장', async () => {
@@ -67,10 +88,12 @@ describe('processUserCreated', () => {
       },
     };
 
+    const mockSupabase = createMockSupabaseClient();
+
     // upsert는 중복 데이터를 처리하므로 동일하게 성공
 
     // Act: 동일한 이벤트 재처리
-    const result = await processUserCreated(mockEvent);
+    const result = await processUserCreated(mockEvent, mockSupabase);
 
     // Assert: 여전히 성공 (멱등성)
     expect(result.success).toBe(true);
@@ -78,10 +101,7 @@ describe('processUserCreated', () => {
   });
 
   it('TC-014: DB 트랜잭션 실패', async () => {
-    // Arrange: 이 테스트는 현재 모킹된 supabase가 항상 성공을 반환하기 때문에
-    // 실제로는 통합 테스트로 대체하는 것이 더 적절합니다.
-    // 단위 테스트에서는 정상 케이스만 검증합니다.
-
+    // Arrange: DB 실패를 시뮬레이션
     const mockEvent = {
       type: 'user.created' as const,
       data: {
@@ -93,10 +113,13 @@ describe('processUserCreated', () => {
       },
     };
 
-    // Act: 사용자 생성 처리
-    const result = await processUserCreated(mockEvent);
+    const mockSupabase = createMockSupabaseClient({ shouldFailUser: true });
 
-    // Assert: 모킹된 supabase 때문에 성공 (실제 DB 실패는 통합테스트에서 테스트)
-    expect(result.success).toBe(true);
+    // Act: 사용자 생성 처리
+    const result = await processUserCreated(mockEvent, mockSupabase);
+
+    // Assert: 실패 결과 확인
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Database error');
   });
 });

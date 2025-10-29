@@ -74,8 +74,7 @@ export default function SubscriptionPage({ params }: SubscriptionPageProps) {
         };
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.firstName, currentUser?.email]);
+  }, [currentUser?.firstName, currentUser?.email, setUpgradeData]);
 
   // URL 파라미터에서 결제 에러 확인 (마운트 시 한 번만 실행)
   useEffect(() => {
@@ -100,8 +99,6 @@ export default function SubscriptionPage({ params }: SubscriptionPageProps) {
     // URL에서 쿼리 파라미터 제거 (깔끔한 URL 유지)
     const newUrl = window.location.pathname;
     window.history.replaceState({}, '', newUrl);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUpgrade = async () => {

@@ -49,12 +49,12 @@ async function processRegularPayments(supabase: SupabaseClient, result: CronResu
 
   console.log(`[Cron] Processing regular payments for ${todayStr}`);
 
-  // Query subscriptions due for payment
+  // Query subscriptions due for payment (today or earlier)
   const { data: subscriptions, error } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('plan_type', 'Pro')
-    .eq('next_payment_date', todayStr)
+    .lte('next_payment_date', todayStr)
     .eq('cancellation_scheduled', false);
 
   if (error) {
@@ -169,12 +169,12 @@ async function processScheduledCancellations(supabase: SupabaseClient, result: C
 
   console.log(`[Cron] Processing scheduled cancellations for ${todayStr}`);
 
-  // Query subscriptions scheduled for cancellation
+  // Query subscriptions scheduled for cancellation (today or earlier)
   const { data: subscriptions, error } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('plan_type', 'Pro')
-    .eq('next_payment_date', todayStr)
+    .lte('next_payment_date', todayStr)
     .eq('cancellation_scheduled', true);
 
   if (error) {

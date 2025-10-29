@@ -12,7 +12,7 @@ describe('AnalysisCard', () => {
       birth_date: '2025-10-28',
       birth_time: '12:34',
       is_lunar: false,
-      model_type: 'pro' as 'pro',
+      model_type: 'pro' as const,
       created_at: new Date().toISOString(),
     };
     render(<AnalysisCard analysis={analysis} />);

@@ -32,14 +32,7 @@ export function useCurrentUser() {
       imageUrl: user.imageUrl,
       subscriptionPlan,
     };
-  }, [
-    user?.id,
-    user?.primaryEmailAddress?.emailAddress,
-    user?.firstName,
-    user?.lastName,
-    user?.imageUrl,
-    user?.publicMetadata?.subscription,
-  ]);
+  }, [user]);
 
   const isAuthenticated = useMemo(() => isLoaded && !!user, [isLoaded, user]);
 

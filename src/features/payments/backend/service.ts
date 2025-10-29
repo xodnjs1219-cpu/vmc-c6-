@@ -52,6 +52,7 @@ export async function processSubscriptionPayment(
       .update({
         plan_type: 'Pro',
         billing_key: billingKey,
+        customer_key: customerKey,
         next_payment_date: nextPaymentDateStr,
         remaining_tries: 10, // Pro 플랜: 월 10회
         updated_at: now,

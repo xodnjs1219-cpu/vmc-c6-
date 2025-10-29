@@ -2,23 +2,119 @@
 
 ## 제공해야하는 소스
   1. docs\userflow.md
+  2. docs\test\test_plan.md
   3. repomix-output.xml
 
 ## 프롬프트
-```bash
-TDD 방법론에 따라 단위(Unit) 테스트 구현 계획을 작성하라
+````bash
 
-현재 프로젝트의 상태를 파악하고 아래의 문서들을 참조하라
-테스트 환경 정보 : `docs/test/test_plan.md`
-요구사항 정보: `docs/userflow.md`,  `docs/usecases/**`
+제공된 코드베이스와 테스트환경을 바탕으로 현재 프로젝트의 상태를 파악하고 단위(Unit) 테스트 구현 계획을 작성하라
 
 아래의 요구사항을 충족하라
-1. TDD 방법론 적용
+
+1. TDD 방법론 적용(제공된 TDD룰 적용)
 2. 단위 테스트 중심: 개별 컴포넌트, 함수, 모듈 중심의 단위 테스트를 계획할 것.
 3. 테스트 커버리지: 전체 코드의 70% 이상을 목표로 계획을 수립할 것.
+4. 해당 내용을 다각도로 피드백하기위한 AI 페르소나를 작성하세요. 평가할 AI의 역할 및 임무를 자세하게 작성해야합니다.
+------------------------------------------------------------------
+TDD 룰
 
-구현 계획은 docs\test\test_unit.md에 생성하라
+# TDD Process Guidelines
+
+## ⚠️ MANDATORY: Follow these rules for EVERY implementation and modification
+
+**This document defines the REQUIRED process for all code changes. No exceptions without explicit team approval.**
+
+## Core Cycle: Red → Green → Refactor
+
+### 1. RED Phase
+- Write a failing test FIRST
+- Test the simplest scenario
+- Verify test fails for the right reason
+- One test at a time
+
+### 2. GREEN Phase  
+- Write MINIMAL code to pass
+- "Fake it till you make it" is OK
+- No premature optimization
+- YAGNI principle
+
+### 3. REFACTOR Phase
+- Remove duplication
+- Improve naming
+- Simplify structure
+- Keep tests passing
+
+## Test Quality: FIRST Principles
+- **Fast**: Milliseconds, not seconds
+- **Independent**: No shared state
+- **Repeatable**: Same result every time
+- **Self-validating**: Pass/fail, no manual checks
+- **Timely**: Written just before code
+
+## Test Structure: AAA Pattern
 ```
+// Arrange
+Set up test data and dependencies
+
+// Act
+Execute the function/method
+
+// Assert
+Verify expected outcome
+```
+
+## Implementation Flow
+1. **List scenarios** before coding
+2. **Pick one scenario** → Write test
+3. **Run test** → See it fail (Red)
+4. **Implement** → Make it pass (Green)
+5. **Refactor** → Clean up (Still Green)
+6. **Commit** → Small, frequent commits
+7. **Repeat** → Next scenario
+
+## Test Pyramid Strategy
+- **Unit Tests** (70%): Fast, isolated, numerous
+- **Integration Tests** (20%): Module boundaries
+- **Acceptance Tests** (10%): User scenarios
+
+## Outside-In vs Inside-Out
+- **Outside-In**: Start with user-facing test → Mock internals → Implement details
+- **Inside-Out**: Start with core logic → Build outward → Integrate components
+
+## Common Anti-patterns to Avoid
+- Testing implementation details
+- Fragile tests tied to internals  
+- Missing assertions
+- Slow, environment-dependent tests
+- Ignored failing tests
+
+## When Tests Fail
+1. **Identify**: Regression, flaky test, or spec change?
+2. **Isolate**: Narrow down the cause
+3. **Fix**: Code bug or test bug
+4. **Learn**: Add missing test cases
+
+## Team Practices
+- CI/CD integration mandatory
+- No merge without tests
+- Test code = Production code quality
+- Pair programming for complex tests
+- Regular test refactoring
+
+## Pragmatic Exceptions
+- UI/Graphics: Manual + snapshot tests
+- Performance: Benchmark suites
+- Exploratory: Spike then test
+- Legacy: Test on change
+
+## Remember
+- Tests are living documentation
+- Test behavior, not implementation
+- Small steps, fast feedback
+- When in doubt, write a test
+
+````
 
 # 2. 계획 검증
 
@@ -96,7 +192,9 @@ TDD 방법론에 따라 단위(Unit) 테스트 구현 계획을 작성하라
 ## 프롬프트(레거시 프로젝트를 리팩토링할때)
 
 ```bash
-docs\test\test_E2E.md 를 참조
-현재 프로젝트가 모든 테스트를 통과할 때까지 코드를 수정하라
-TDD 방법론을 따라라
+docs\test\test_unit.md 를 참조
+현재 프로젝트가 모든 테스트를 통과할 때까지 테스트 코드를 작성하라
+- 모두 구현할때까지 멈추지말고 진행하라
+- type, lint, build에러가 없음을 보장하라
+
 ```

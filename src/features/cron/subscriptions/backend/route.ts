@@ -8,10 +8,11 @@ import type { AppEnv } from '@/backend/hono/context';
 export async function registerCronRoutes(baseApp: Hono<AppEnv>): Promise<void> {
   baseApp.post('/api/cron/process-subscriptions', async (c) => {
     try {
-      // Verify Cron Secret
+      // Verify Cron Secret (check both authorization and x-cron-secret headers)
       const authHeader = c.req.header('authorization');
+      const cronSecretHeader = c.req.header('x-cron-secret');
 
-      if (!verifyCronSecret(authHeader)) {
+      if (!verifyCronSecret(authHeader) && !verifyCronSecret(cronSecretHeader ? `Bearer ${cronSecretHeader}` : undefined)) {
         console.error('[Cron] Invalid or missing CRON_SECRET');
         throw new HTTPException(401, { message: 'Unauthorized' });
       }
